@@ -11,13 +11,15 @@
 import ast
 import base64
 import datetime
+import html
 import json
+import re
+from threading import Thread
 import urllib.parse as urlparse
 import urllib.request
 import urllib.request
 import pytz
 from bs4 import BeautifulSoup
-
 
 # 학교가 속한 지역과 학교의 이름을 정확히 입력
 # 컴시간알리미 검색 결과가 1개로 특정되도록 해주세요.
@@ -34,13 +36,11 @@ today = datetime.datetime.now(pytz.timezone('Asia/Seoul')).date()
 yesterday = today - datetime.timedelta(days=1)
 tomorrow = today + datetime.timedelta(days=1)
 
-
 if today.weekday() == 6:  # 만약 오늘이 일요일이라면
     sunday = today
 else:
     sunday = today - datetime.timedelta(days=today.weekday() + 1)
 saturday = sunday + datetime.timedelta(days=6)
-
 
 meals = {}
 def meal():
@@ -89,9 +89,11 @@ def meal():
         # 메뉴 파싱
         menus_raw = data[2].find_all("td")
         for menu_raw in menus_raw:
-            menu = menu_raw.get_text().strip()
+            menu = str(menu_raw).replace('<br/>', '.\n')  # 줄바꿈 처리
+            menu = html.unescape(re.sub('<.+?>', '', menu).strip())  # 태그 및 HTML 엔티티 처리
             for i in range(18):
                 menu = menu.replace(allergy_filter[i], allergy_string[i]).replace('.\n', ',\n')
+            menu = menu.split('\n')  # 한 줄씩 자르기
             if not menu:
                 menu = None
             menus.append(menu)
@@ -104,15 +106,16 @@ def meal():
                 calorie = None
             calories.append(calorie)
 
-    for loc in range(len(dates)):
-        meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
-    
+        for loc in range(7):
+            meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
+
+    wdays = ["월", "화", "수", "목", "금", "토", "일"]
     if not today in meals:
-        meals[today] = None
+        meals[today] = ["%s(%s)" % (today, wdays[today.weekday()]), [''], None]
     if not yesterday in meals:
-        meals[yesterday] = None
+        meals[yesterday] = ["%s(%s)" % (yesterday, wdays[yesterday.weekday()]), [''], None]
     if not tomorrow in meals:
-        meals[tomorrow] = None
+        meals[tomorrow] = ["%s(%s)" % (tomorrow, wdays[tomorrow.weekday()]), [''], None]
 
 timetables = {}
 def tt():
@@ -183,14 +186,14 @@ def tt():
         date = start_date + datetime.timedelta(days=i)
         dates[0].append(date)
     for i in range((end_date - (end_date - datetime.timedelta(days=7))).days + 1):
-        date = start_date + datetime.timedelta(days=7+i)
+        date = start_date + datetime.timedelta(days=7 + i)
         dates[1].append(date)
 
     for i in [0, 1]:
         teacher_list = raw_data[i]["자료46"]  # 교사명단
         subject_list = raw_data[i]["자료92"]  # 2글자로 축약한 과목명단 - 전체 명칭은 긴자료92에 담겨있음
         for grade in range(1, 4):
-            for class_ in range(1, num_of_classes+1):
+            for class_ in range(1, num_of_classes + 1):
                 tt = raw_data[i]["자료14"][grade][class_]  # 자료14에 각 반의 일일시간표 정보가 담겨있음
                 og_tt = raw_data[i]["자료81"][grade][class_]  # 자료81에 각 반의 원본시간표 정보가 담겨있음
                 for wday in range(6):
@@ -204,13 +207,13 @@ def tt():
                         comci_wday = 0
                     else:
                         comci_wday = wday + 1
-                    tts = []
                     for day in range(len(tt[comci_wday])):
                         if tt[comci_wday][day] != 0:
                             subject = subject_list[int(str(tt[comci_wday][day])[-2:])]  # 뒤의 2자리는 과목명을 나타냄
                             teacher = teacher_list[int(str(tt[comci_wday][day])[:-2])]  # 나머지 숫자는 교사명을 나타냄
                             if not tt[comci_wday][day] == og_tt[comci_wday][day]:
-                                timetables[dates[i][wday]][grade][class_].append("⭐%s(%s)" % (subject, teacher))  # 시간표 변경사항 표시
+                                timetables[dates[i][wday]][grade][class_].append(
+                                    "⭐%s(%s)" % (subject, teacher))  # 시간표 변경사항 표시
                             else:
                                 timetables[dates[i][wday]][grade][class_].append("%s(%s)" % (subject, teacher))
 
@@ -221,7 +224,10 @@ def tt():
     if not tomorrow in timetables:
         timetables[tomorrow] = None
 
+
 schdls = {}
+
+
 def schdl():
     # 학년도 기준, 다음해 2월까지 전년도로 조회
     if today.month < 3:
@@ -238,10 +244,10 @@ def schdl():
         sy_tomorrow = tomorrow
 
     neis_baseurl = ("http://stu.goe.go.kr/sts_sci_sf01_001.do?"
-               "schulCode=%s"
-               "&schulCrseScCode=%d"
-               "&schulKndScCode=%02d"
-               % (school_code, school_kind, school_kind))
+                    "schulCode=%s"
+                    "&schulCrseScCode=%d"
+                    "&schulKndScCode=%02d"
+                    % (school_code, school_kind, school_kind))
 
     neis_urls = [("&ay=%04d&mm=%02d" % (sy_today.year, sy_today.month), today)]
     if sy_yesterday < sy_today.replace(day=1):  # 만약 어제가 지난 달이라면
@@ -266,18 +272,26 @@ def schdl():
         for i in range(len(data)):
             string = data[i].get_text().strip()
             if string[2:].replace('\n', '') and pstpr(string[2:]):
-                schdls[url[1].replace(day=int(string[:2]))] = pstpr(string[2:])
-    
+                schdls[url[1].replace(day=int(string[:2]))] = pstpr(string[2:]).split('\n')  # 한 줄씩 자르기
+
     if not today in schdls:
         schdls[today] = None
     if not yesterday in schdls:
         schdls[yesterday] = None
     if not tomorrow in schdls:
         schdls[tomorrow] = None
-                
-meal()
-tt()
-schdl()
+
+th_meal = Thread(target=meal)
+th_tt = Thread(target=tt)
+th_schdl = Thread(target=schdl)
+# 쓰레드 실행
+th_meal.start()
+th_tt.start()
+th_schdl.start()
+# 전 쓰레드 종료 시까지 기다리기
+th_meal.join()
+th_tt.join()
+th_schdl.join()
 
 final = {
     "Today": {
@@ -308,7 +322,6 @@ final = {
         "Timetable": timetables[tomorrow]
     }
 }
-
 
 with open('dist/data.json', 'w', encoding="utf-8") as make_file:
     json.dump(final, make_file, ensure_ascii=False, indent="\t")
