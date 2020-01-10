@@ -263,7 +263,7 @@ schdl()
 final = {
     "Today": {
         "Date": meals[today][0],
-        "schedule": schdls[today],
+        "Schedule": schdls[today],
         "Meal": {
             "Menu": meals[today][1],
             "Calories": meals[today][2]
@@ -272,7 +272,7 @@ final = {
     },
     "Yesterday": {
         "Date": meals[yesterday][0],
-        "schedule": schdls[yesterday],
+        "Schedule": schdls[yesterday],
         "Meal": {
             "Menu": meals[yesterday][1],
             "Calories": meals[yesterday][2]
@@ -281,7 +281,7 @@ final = {
     },
     "Tomorrow": {
         "Date": meals[tomorrow][0],
-        "schedule": schdls[tomorrow],
+        "Schedule": schdls[tomorrow],
         "Meal": {
             "Menu": meals[tomorrow][1],
             "Calories": meals[tomorrow][2]
