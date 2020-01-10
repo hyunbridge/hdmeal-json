@@ -106,6 +106,13 @@ def meal():
 
     for loc in range(len(dates)):
         meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
+    
+    if not today in meals:
+        meals[today] = None
+    if not yesterday in meals:
+        meals[yesterday] = None
+    if not tomorrow in meals:
+        meals[tomorrow] = None
 
 timetables = {}
 def tt():
@@ -207,6 +214,13 @@ def tt():
                             else:
                                 timetables[dates[i][wday]][grade][class_].append("%s(%s)" % (subject, teacher))
 
+    if not today in timetables:
+        timetables[today] = None
+    if not yesterday in timetables:
+        timetables[yesterday] = None
+    if not tomorrow in timetables:
+        timetables[tomorrow] = None
+
 schdls = {}
 def schdl():
     # 학년도 기준, 다음해 2월까지 전년도로 조회
@@ -232,7 +246,12 @@ def schdl():
     neis_urls = [("&ay=%04d&mm=%02d" % (sy_today.year, sy_today.month), today)]
     if sy_yesterday < sy_today.replace(day=1):  # 만약 어제가 지난 달이라면
         neis_urls.insert(0, ("&ay=%04d&mm=%02d" % (sy_yesterday.year, sy_yesterday.month), yesterday))
-    if sy_today.replace(month=sy_today.month+1, day=1) <= sy_tomorrow:  # 만약 내일이 다음 달이라면
+    sy_today_nextmonth = sy_today
+    if sy_today.month == 12:
+        sy_today_nextmonth.replace(month=1, day=1)
+    else:
+        sy_today_nextmonth.replace(month=sy_today_nextmonth.month + 1, day=1)
+    if sy_today_nextmonth <= sy_tomorrow:  # 만약 내일이 다음 달이라면
         neis_urls.append(("&ay=%04d&mm=%02d" % (sy_tomorrow.year, sy_tomorrow.month), tomorrow))
 
     for url in neis_urls:
