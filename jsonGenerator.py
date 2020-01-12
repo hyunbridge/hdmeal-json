@@ -112,7 +112,7 @@ def meal():
             try:
                 meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
             except Exception:
-                meals[dates[loc]] = ["%s(%s)" % (tomorrow, wdays[tomorrow.weekday()]), [''], None]
+                meals[dates[loc]] = ["%s(%s)" % (dates[loc], wdays[dates[loc].weekday()]), [''], None]
 
     if not today in meals:
         meals[today] = ["%s(%s)" % (today, wdays[today.weekday()]), [''], None]
