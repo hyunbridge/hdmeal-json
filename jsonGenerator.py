@@ -32,6 +32,8 @@ school_kind = 3  # 1 유치원, 2 초등학교, 3 중학교, 4 고등학교
 # 학급수를 정확히 입력
 num_of_classes = 12
 
+wdays = ["월", "화", "수", "목", "금", "토", "일"]
+
 today = datetime.datetime.now(pytz.timezone('Asia/Seoul')).date()
 yesterday = today - datetime.timedelta(days=1)
 tomorrow = today + datetime.timedelta(days=1)
@@ -107,9 +109,11 @@ def meal():
             calories.append(calorie)
 
         for loc in range(7):
-            meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
+            try:
+                meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
+            except Exception:
+                meals[dates[loc]] = ["%s(%s)" % (tomorrow, wdays[tomorrow.weekday()]), [''], None]
 
-    wdays = ["월", "화", "수", "목", "금", "토", "일"]
     if not today in meals:
         meals[today] = ["%s(%s)" % (today, wdays[today.weekday()]), [''], None]
     if not yesterday in meals:
