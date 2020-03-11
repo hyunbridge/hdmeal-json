@@ -4,7 +4,7 @@
 # ██╔══██║██║  ██║██║╚██╔╝██║██╔══╝  ██╔══██║██║
 # ██║  ██║██████╔╝██║ ╚═╝ ██║███████╗██║  ██║███████╗
 # ╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝
-# Copyright 2019, Hyungyo Seo
+# Copyright 2019-2020, Hyungyo Seo
 # jsonGenerator.py - 어제, 오늘 내일의 학사정보를 JSON 파일로 만들어주는 스크립트입니다.
 
 
@@ -25,12 +25,15 @@ from bs4 import BeautifulSoup
 # 컴시간알리미 검색 결과가 1개로 특정되도록 해주세요.
 # 검색 결과가 2건 이상일 경우, 첫 번째 학교를 선택합니다.
 school_region = "경기"
-school_name = "흥덕중학교"
+school_name = "흥덕고등학교"
 # 학교코드와 학교종류를 정확히 입력
-school_code = "J100005775"
-school_kind = 3  # 1 유치원, 2 초등학교, 3 중학교, 4 고등학교
+school_code = "J100005677"
+school_kind = 4  # 1 유치원, 2 초등학교, 3 중학교, 4 고등학교
 # 학급수를 정확히 입력
-num_of_classes = 12
+num_of_classes = 9
+
+print("Deployment Started with Configs - [%s(%s, %s, %d), Classes: %d]"
+      % (school_name, school_region, school_code, school_kind, num_of_classes))
 
 wdays = ["월", "화", "수", "목", "금", "토", "일"]
 
