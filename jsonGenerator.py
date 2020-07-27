@@ -281,7 +281,7 @@ def tt():
                                     timetables[dates[i][wday]][grade][class_].append(
                                         "⭐%s(%s)" % (subject, teacher))  # 시간표 변경사항 표시
                                 else:
-                                    timetables[dates[i][wday]][grade][class_].append([subject, teacher])
+                                    timetables[dates[i][wday]][grade][class_].append("%s(%s)" % (subject, teacher))
     except Exception as e:
         print(e)
 
