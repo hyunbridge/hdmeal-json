@@ -1,4 +1,3 @@
-#ignore all files in this dir...
-*.json
+data.json
 #... except for this one.
 !.gitignore
