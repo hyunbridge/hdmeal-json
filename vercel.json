@@ -1,0 +1,32 @@
+{
+    "regions": [
+        "icn"
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "X-Powered-By",
+                    "value": "HGSEO"
+                }
+            ]
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "status": 404,
+            "dest": "/errors/404.json"
+        },
+        {
+            "src": "/",
+            "status": 301,
+            "headers": { "Location": "https://hdml.kr/" }
+        }
+    ]
+}
