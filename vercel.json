@@ -2,31 +2,29 @@
     "regions": [
         "icn"
     ],
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "Access-Control-Allow-Origin",
-                    "value": "*"
-                },
-                {
-                    "key": "X-Powered-By",
-                    "value": "HGSEO"
-                }
-            ]
-        }
-    ],
     "routes": [
+        {
+            "src": "/",
+            "status": 301,
+            "headers": {
+                "Location": "https://hdml.kr/"
+            }
+        },
+        {
+            "src": "/(.*)",
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "X-Powered-By": "HGSEO"
+            },
+            "dest": "/$1"
+        },
+        {
+            "handle": "filesystem"
+        },
         {
             "src": "/(.*)",
             "status": 404,
             "dest": "/errors/404.json"
-        },
-        {
-            "src": "/",
-            "status": 301,
-            "headers": { "Location": "https://hdml.kr/" }
         }
     ]
 }
