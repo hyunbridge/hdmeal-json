@@ -41,17 +41,17 @@ headers = {
 print("Deployment Started with Configs - [%s(%s, %s, %d), Classes: %d]"
       % (school_name, school_region, school_code, school_kind, num_of_classes))
 
-wdays = ["월", "화", "수", "목", "금", "토", "일"]
 
 today = datetime.datetime.now(pytz.timezone('Asia/Seoul')).date()
+# 오늘 전후로 나흘씩 조회
+days = [today + datetime.timedelta(days=i) for i in [-3, -2, -1, 0, 1, 2, 3]]
+# NEIS 요청 수를 최적화하기 위해 조회날짜가 걸쳐 있는 주의 일요일 날짜를 구함
+sundays = sorted(list({i - datetime.timedelta(days=i.weekday() + 1) if not i.weekday() == 6 else i for i in days}))
+# NEIS 요청 수를 최적화하기 위해 조회날짜가 걸쳐 있는 달을 구함, 학년도 기준이므로 이듬해 2월까지 전년도로 취급
+sy_months = sorted(list({datetime.date(i.year, i.month, 1) if i.month >= 3 else datetime.date(i.year - 1, i.month, 1) for i in days}))
 yesterday = today - datetime.timedelta(days=1)
 tomorrow = today + datetime.timedelta(days=1)
 
-if today.weekday() == 6:  # 만약 오늘이 일요일이라면
-    sunday = today
-else:
-    sunday = today - datetime.timedelta(days=today.weekday() + 1)
-saturday = sunday + datetime.timedelta(days=6)
 
 meals = {}
 def meal():
@@ -66,11 +66,7 @@ def meal():
                     "&schMmealScCode=2"
                     "&schYmd=" % (school_code, school_kind, school_kind))
 
-    neis_urls = ["%s%04d.%02d.%02d" % (neis_baseurl, sunday.year, sunday.month, sunday.day)]
-    if yesterday < sunday:  # 만약 어제가 이번 주 일요일보다 과거라면
-        neis_urls.insert(0, "%s%04d.%02d.%02d" % (neis_baseurl, yesterday.year, yesterday.month, yesterday.day))
-    if saturday < tomorrow:  # 만약 내일이 이번 주 토요일보다 미래라면
-        neis_urls.append("%s%04d.%02d.%02d" % (neis_baseurl, tomorrow.year, tomorrow.month, tomorrow.day))
+    neis_urls = ["%s%04d.%02d.%02d" % (neis_baseurl, i.year, i.month, i.day) for i in sundays]
     for url in neis_urls:
         req = urllib.request.urlopen(url)
 
@@ -105,34 +101,31 @@ def meal():
             for i in range(18):
                 menu = menu.replace(allergy_filter[i], allergy_string[i]).replace('.\n', ',\n')
             menu = menu.split('\n')  # 한 줄씩 자르기
-            if not menu:
+            if not menu or not menu[0]:
                 menu = None
             menus.append(menu)
 
         # 칼로리 파싱
-        calories_raw = data[45].find_all("td")
+        calories_raw = data[51].find_all("td")
         for calorie_raw in calories_raw:
             calorie = calorie_raw.get_text().strip()
-            if not calorie:
+            try:
+                calorie = float(calorie)
+            except ValueError:
                 calorie = None
             calories.append(calorie)
 
-        for loc in range(7):
-            try:
-                meals[dates[loc]] = [dates_text[loc], menus[loc], calories[loc]]
-            except Exception:
-                meals[dates[loc]] = ["%s(%s)" % (dates[loc], wdays[dates[loc].weekday()]), [''], None]
+    for i in days:
+        loc = dates.index(i)
+        try:
+            meals[i] = [menus[loc], calories[loc]]
+        except Exception:
+            meals[i] = [None, None]
 
-    if not today in meals:
-        meals[today] = ["%s(%s)" % (today, wdays[today.weekday()]), [''], None]
-    if not yesterday in meals:
-        meals[yesterday] = ["%s(%s)" % (yesterday, wdays[yesterday.weekday()]), [''], None]
-    if not tomorrow in meals:
-        meals[tomorrow] = ["%s(%s)" % (tomorrow, wdays[tomorrow.weekday()]), [''], None]
 
 timetables = {}
+timetables_default = {}
 def tt():
-    timetables_default = {}
     for grade in [1, 2, 3]:
         classes = {}
         for class_ in range(1, num_of_classes + 1):
@@ -286,49 +279,15 @@ def tt():
         print(e)
 
 
-
-    if not today in timetables:
-        timetables[today] = timetables_default
-    if not yesterday in timetables:
-        timetables[yesterday] = timetables_default
-    if not tomorrow in timetables:
-        timetables[tomorrow] = timetables_default
-
-
 schdls = {}
-
-
 def schdl():
-    # 학년도 기준, 다음해 2월까지 전년도로 조회
-    if today.month < 3:
-        sy_today = today - datetime.timedelta(days=365)
-    else:
-        sy_today = today
-    if yesterday.month < 3:
-        sy_yesterday = yesterday - datetime.timedelta(days=365)
-    else:
-        sy_yesterday = yesterday
-    if tomorrow.month < 3:
-        sy_tomorrow = tomorrow - datetime.timedelta(days=365)
-    else:
-        sy_tomorrow = tomorrow
-
     neis_baseurl = ("http://stu.goe.go.kr/sts_sci_sf01_001.do?"
                     "schulCode=%s"
                     "&schulCrseScCode=%d"
                     "&schulKndScCode=%02d"
                     % (school_code, school_kind, school_kind))
 
-    neis_urls = [("&ay=%04d&mm=%02d" % (sy_today.year, sy_today.month), today)]
-    if sy_yesterday < sy_today.replace(day=1):  # 만약 어제가 지난 달이라면
-        neis_urls.insert(0, ("&ay=%04d&mm=%02d" % (sy_yesterday.year, sy_yesterday.month), yesterday))
-    sy_today_nextmonth = sy_today
-    if sy_today.month == 12:
-        sy_today_nextmonth.replace(month=1, day=1)
-    else:
-        sy_today_nextmonth.replace(month=sy_today_nextmonth.month + 1, day=1)
-    if sy_today_nextmonth <= sy_tomorrow:  # 만약 내일이 다음 달이라면
-        neis_urls.append(("&ay=%04d&mm=%02d" % (sy_tomorrow.year, sy_tomorrow.month), tomorrow))
+    neis_urls = [("&ay=%04d&mm=%02d" % (i.year, i.month), i) for i in sy_months]
 
     for url in neis_urls:
         req = urllib.request.urlopen(neis_baseurl + url[0])
@@ -344,13 +303,6 @@ def schdl():
             if string[2:].replace('\n', '') and pstpr(string[2:]):
                 schdls[url[1].replace(day=int(string[:2]))] = pstpr(string[2:]).split('\n')  # 한 줄씩 자르기
 
-    if not today in schdls:
-        schdls[today] = None
-    if not yesterday in schdls:
-        schdls[yesterday] = None
-    if not tomorrow in schdls:
-        schdls[tomorrow] = None
-
 th_meal = Thread(target=meal)
 th_tt = Thread(target=tt)
 th_schdl = Thread(target=schdl)
@@ -363,36 +315,13 @@ th_meal.join()
 th_tt.join()
 th_schdl.join()
 
-final = {
-    "Today": {
-        "Date": meals[today][0],
-        "Schedule": schdls[today],
-        "Meal": {
-            "Menu": meals[today][1],
-            "Calories": meals[today][2]
-        },
-        "Timetable": timetables[today]
-    },
-    "Yesterday": {
-        "Date": meals[yesterday][0],
-        "Schedule": schdls[yesterday],
-        "Meal": {
-            "Menu": meals[yesterday][1],
-            "Calories": meals[yesterday][2]
-        },
-        "Timetable": timetables[yesterday]
-    },
-    "Tomorrow": {
-        "Date": meals[tomorrow][0],
-        "Schedule": schdls[tomorrow],
-        "Meal": {
-            "Menu": meals[tomorrow][1],
-            "Calories": meals[tomorrow][2]
-        },
-        "Timetable": timetables[tomorrow]
+final = {}
+for i in days:
+    final['%04d-%02d-%02d' % (i.year, i.month, i.day)] = {
+        'Schedule': schdls.get(i),
+        'Meal': meals.get(i, [None, None]),
+        "Timetable": timetables.get(i, timetables_default)
     }
-}
-
-with open('dist/data.json', 'w', encoding="utf-8") as make_file:
+with open('dist/data.v2.json', 'w', encoding="utf-8") as make_file:
     json.dump(final, make_file, ensure_ascii=False)
     print("File Created")
