@@ -32,7 +32,7 @@ school_kind = 4  # 1 유치원, 2 초등학교, 3 중학교, 4 고등학교
 # 학급수를 정확히 입력
 num_of_classes = 9
 # 컴시간알리미 웹사이트 URL
-url = "http://comci.kr/st/"
+url = "http://xn--s39aj90b0nb2xw6xh.kr/"
 # 기타 옵션 입력
 headers = {
     'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36"
