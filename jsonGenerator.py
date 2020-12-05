@@ -104,6 +104,8 @@ def meal():
             if not menu or not menu[0]:
                 menu = None
             menus.append(menu)
+        if not menus:
+            menus = [None, None, None, None, None, None, None]
 
         # 칼로리 파싱
         calories_raw = data[51].find_all("td")
@@ -114,6 +116,8 @@ def meal():
             except ValueError:
                 calorie = None
             calories.append(calorie)
+        if not calories:
+            calories = [None, None, None, None, None, None, None]
 
     for i in days:
         loc = dates.index(i)
