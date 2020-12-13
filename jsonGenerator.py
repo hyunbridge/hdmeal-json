@@ -17,7 +17,6 @@ import re
 from threading import Thread
 import urllib.parse as urlparse
 import urllib.request
-import urllib.request
 import pytz
 from bs4 import BeautifulSoup
 
@@ -82,7 +81,7 @@ def meal():
             date = datetime.datetime.strptime(date_text[:-3], "%Y-%m-%d").date()
             dates_text.append(date_text)
             dates.append(date)
-
+        ''' 알러지정보 표시하려면 주석해제
         # 알레르기정보 선언
         allergy_filter = ["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.",
                           "9.", "10.", "11.", "12.", "13.", "14.", "15.", "16.",
@@ -92,18 +91,28 @@ def meal():
                           "[오징어]", "[조개류]"]
         allergy_filter.reverse()
         allergy_string.reverse()  # 역순으로 정렬 - 오류방지
-
+        '''
         # 메뉴 파싱
         menus_raw = data[2].find_all("td")
         for menu_raw in menus_raw:
             menu = str(menu_raw).replace('<br/>', '.\n')  # 줄바꿈 처리
             menu = html.unescape(re.sub('<.+?>', '', menu).strip())  # 태그 및 HTML 엔티티 처리
+            '''  알러지정보 표시하려면 주석해제
             for i in range(18):
                 menu = menu.replace(allergy_filter[i], allergy_string[i]).replace('.\n', ',\n')
+            '''
             menu = menu.split('\n')  # 한 줄씩 자르기
             if not menu or not menu[0]:
-                menu = None
-            menus.append(menu)
+                menus.append(None)
+            # 알러지정보 표시하려면 여기부터 삭제
+            else:
+                menu_cleaned = []
+                for i in menu:
+                    allergy_re = re.findall(r'[0-9]+\.', i)
+                    i = i[:-1].replace(''.join(allergy_re), '')
+                    menu_cleaned.append(i)
+                menus.append(menu_cleaned)
+            # 알러지정보 표시하려면 여기까지 삭제
         if not menus:
             menus = [None, None, None, None, None, None, None]
 
