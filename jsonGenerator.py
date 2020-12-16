@@ -52,10 +52,12 @@ yesterday = today - datetime.timedelta(days=1)
 tomorrow = today + datetime.timedelta(days=1)
 
 
+meals_v2 = {}
 meals = {}
 def meal():
     dates = []
     dates_text = []
+    menus_v2 = []
     menus = []
     calories = []
     neis_baseurl = ("http://stu.goe.go.kr/sts_sci_md01_001.do?"
@@ -81,39 +83,28 @@ def meal():
             date = datetime.datetime.strptime(date_text[:-3], "%Y-%m-%d").date()
             dates_text.append(date_text)
             dates.append(date)
-        ''' 알러지정보 표시하려면 주석해제
-        # 알레르기정보 선언
-        allergy_filter = ["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.",
-                          "9.", "10.", "11.", "12.", "13.", "14.", "15.", "16.",
-                          "17.", "18."]
-        allergy_string = ["[난류]", "[우유]", "[메밀]", "[땅콩]", "[대두]", "[밀]", "[고등어]", "[게]",
-                          "[새우]", "[돼지고기]", "[복숭아]", "[토마토]", "[아황산류]", "[호두]", "[닭고기]", "[쇠고기]",
-                          "[오징어]", "[조개류]"]
-        allergy_filter.reverse()
-        allergy_string.reverse()  # 역순으로 정렬 - 오류방지
-        '''
         # 메뉴 파싱
         menus_raw = data[2].find_all("td")
         for menu_raw in menus_raw:
             menu = str(menu_raw).replace('<br/>', '.\n')  # 줄바꿈 처리
             menu = html.unescape(re.sub('<.+?>', '', menu).strip())  # 태그 및 HTML 엔티티 처리
-            '''  알러지정보 표시하려면 주석해제
-            for i in range(18):
-                menu = menu.replace(allergy_filter[i], allergy_string[i]).replace('.\n', ',\n')
-            '''
             menu = menu.split('\n')  # 한 줄씩 자르기
             if not menu or not menu[0]:
+                menus_v2.append(None)
                 menus.append(None)
-            # 알러지정보 표시하려면 여기부터 삭제
             else:
+                menu_cleaned_v2 = []
                 menu_cleaned = []
                 for i in menu:
                     allergy_re = re.findall(r'[0-9]+\.', i)
+                    allergy_info = [int(x[:-1]) for x in allergy_re]
                     i = i[:-1].replace(''.join(allergy_re), '')
-                    menu_cleaned.append(i)
+                    menu_cleaned_v2.append(i)
+                    menu_cleaned.append([i, allergy_info])
+                menus_v2.append(menu_cleaned_v2)
                 menus.append(menu_cleaned)
-            # 알러지정보 표시하려면 여기까지 삭제
         if not menus:
+            menus_v2 = [None, None, None, None, None, None, None]
             menus = [None, None, None, None, None, None, None]
 
         # 칼로리 파싱
@@ -131,9 +122,11 @@ def meal():
     for i in days:
         loc = dates.index(i)
         try:
+            meals_v2[i] = [menus_v2[loc], calories[loc]]
             meals[i] = [menus[loc], calories[loc]]
         except Exception:
-            meals[i] = [None, None]
+            meals_v2[i] = [None, None]
+            meals[i] = [[None, []], None]
 
 
 timetables = {}
@@ -328,7 +321,14 @@ th_meal.join()
 th_tt.join()
 th_schdl.join()
 
+final_v2 = {}
 final = {}
+for i in days:
+    final_v2['%04d-%02d-%02d' % (i.year, i.month, i.day)] = {
+        'Schedule': schdls.get(i),
+        'Meal': meals_v2.get(i, [None, None]),
+        "Timetable": timetables.get(i, timetables_default)
+    }
 for i in days:
     final['%04d-%02d-%02d' % (i.year, i.month, i.day)] = {
         'Schedule': schdls.get(i),
@@ -336,5 +336,8 @@ for i in days:
         "Timetable": timetables.get(i, timetables_default)
     }
 with open('dist/data.v2.json', 'w', encoding="utf-8") as make_file:
+    json.dump(final_v2, make_file, ensure_ascii=False)
+    print("File Created(v2)")
+with open('dist/data.v3.json', 'w', encoding="utf-8") as make_file:
     json.dump(final, make_file, ensure_ascii=False)
     print("File Created")
