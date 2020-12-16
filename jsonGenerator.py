@@ -126,7 +126,7 @@ def meal():
             meals[i] = [menus[loc], calories[loc]]
         except Exception:
             meals_v2[i] = [None, None]
-            meals[i] = [[None, []], None]
+            meals[i] = [None, None]
 
 
 timetables = {}
