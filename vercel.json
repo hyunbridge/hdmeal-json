@@ -22,6 +22,10 @@
             "handle": "filesystem"
         },
         {
+            "src": "/api/v(?<version>[1-9]*)/app/",
+            "dest": "/data.v$version.json"
+        },
+        {
             "src": "/(.*)",
             "status": 404,
             "dest": "/errors/404.json"
