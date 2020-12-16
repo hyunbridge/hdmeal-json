@@ -19,6 +19,9 @@
             "dest": "/$1"
         },
         {
+            "handle": "filesystem"
+        },
+        {
             "src": "/api/v(?<version>[2-3])/app/",
             "dest": "/data.v$version.json"
         },
