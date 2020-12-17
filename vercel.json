@@ -4,31 +4,26 @@
     ],
     "routes": [
         {
-            "src": "/",
-            "status": 301,
-            "headers": {
-                "Location": "https://hdml.kr/"
-            }
-        },
-        {
             "src": "/(.*)",
             "headers": {
                 "Access-Control-Allow-Origin": "*",
                 "X-Powered-By": "HGSEO"
             },
-            "dest": "/$1"
+            "dest": "/$1",
+            "continue": true
         },
         {
-            "src": "*.json",
+            "src": "/(.*).json",
             "status": 404,
             "dest": "/errors/404.json"
         },
         {
-            "handle": "filesystem"
+            "src": "/api/v(?<version>[0-9])/app/",
+            "dest": "/data.v$version.json",
+            "continue": true
         },
         {
-            "src": "/api/v(?<version>[2-3])/app/",
-            "dest": "/data.v$version.json"
+            "handle": "filesystem"
         },
         {
             "src": "/(.*)",
