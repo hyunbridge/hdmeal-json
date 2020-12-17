@@ -19,7 +19,7 @@
             "dest": "/$1"
         },
         {
-            "src": "/(.*).json",
+            "src": "*.json",
             "status": 404,
             "dest": "/errors/404.json"
         },
