@@ -19,6 +19,11 @@
             "dest": "/$1"
         },
         {
+            "src": "/(.*).json",
+            "status": 404,
+            "dest": "/errors/404.json"
+        },
+        {
             "handle": "filesystem"
         },
         {
