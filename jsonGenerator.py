@@ -143,6 +143,8 @@ def schdl():
                 schedule_text = "%s(%s)" % (schedule[1], ", ".join("%s학년" % i for i in schedule[2]))
                 schedule_text = schedule_text.replace("()", "")
                 schdls[date].append(schedule_text)
+        if not schdls[date]:
+            schdls[date] = None
 
 th_meal = Thread(target=meal)
 th_tt = Thread(target=tt)
