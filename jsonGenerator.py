@@ -62,7 +62,7 @@ def meal():
             menu_cleaned = []
             for i in menu:
                 allergy_info = [int(x[:-1]) for x in re.findall(r'[0-9]+\.', i)]
-                i = i[:-1].replace(".", "").replace(''.join(str(x) for x in allergy_info), '')
+                i = i.replace(".", "").replace(''.join(str(x) for x in allergy_info), '')
                 menu_cleaned_v2.append(i)
                 menu_cleaned.append([i, allergy_info])
             menus_v2[date] = menu_cleaned_v2
