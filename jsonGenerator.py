@@ -140,7 +140,7 @@ def schdl():
         schdls[date] = []
         for schedule in x:
             if schedule[1] != "토요휴업일":
-                schedule_text = "%s(%s)" % (schedule[1], ", ".join("%s학년" % i for i in schedule[2]))
+                schedule_text = "%s(%s)" % (schedule[1].strip(), ", ".join("%s학년" % i for i in schedule[2]))
                 schedule_text = schedule_text.replace("()", "")
                 schdls[date].append(schedule_text)
         if not schdls[date]:
