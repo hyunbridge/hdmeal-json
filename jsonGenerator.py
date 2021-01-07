@@ -18,7 +18,7 @@ from threading import Thread
 import pytz as pytz
 
 
-SUPPORTED_API_VERSIONS = ['v2', 'v3']
+SUPPORTED_API_VERSIONS = ['v2', 'v3', 'v4']
 
 try:
     NEIS_OPENAPI_TOKEN = os.environ["NEIS_OPENAPI_TOKEN"]  # NEUS 오픈API 인증 토큰
@@ -87,7 +87,8 @@ class Meal:
 
 class Schedule:
     def __init__(self):
-        self._default = {}
+        self.v4 = collections.defaultdict(list)
+        self._default = collections.defaultdict(list)
 
     def __getattr__(self, _):
         return self._default
@@ -110,16 +111,17 @@ class Schedule:
             if i["FIV_GRADE_EVENT_YN"] == "Y": related_grade.append(5)
             if i["SIX_GRADE_EVENT_YN"] == "Y": related_grade.append(6)
 
-            schedule_raw_data.append([date, i["EVENT_NM"], related_grade])
+            schedule_raw_data.append([date, i["EVENT_NM"].strip(), related_grade])
 
         for date, x in groupby(schedule_raw_data, lambda i: i[0]):
-            self._default[date] = []
             for schedule in x:
                 if schedule[1] != "토요휴업일":
-                    schedule_text = "%s(%s)" % (schedule[1].strip(), ", ".join("%s학년" % i for i in schedule[2]))
+                    schedule_text = "%s(%s)" % (schedule[1], ", ".join("%s학년" % i for i in schedule[2]))
                     schedule_text = schedule_text.replace("()", "")
+                    self.v4[date].append([schedule[1], schedule[2]])
                     self._default[date].append(schedule_text)
             if not self._default[date]:
+                self.v4[date] = None
                 self._default[date] = None
 
 
