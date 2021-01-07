@@ -7,7 +7,7 @@
 # Copyright 2019-2020, Hyungyo Seo
 # jsonGenerator.py - 어제, 오늘 내일의 학사정보를 JSON 파일로 만들어주는 스크립트입니다.
 
-
+import collections
 import datetime
 import json
 import os
@@ -15,9 +15,10 @@ import re
 import urllib.request
 from itertools import groupby
 from threading import Thread
-
 import pytz as pytz
 
+
+SUPPORTED_API_VERSIONS = ['v2', 'v3']
 
 try:
     NEIS_OPENAPI_TOKEN = os.environ["NEIS_OPENAPI_TOKEN"]  # NEUS 오픈API 인증 토큰
@@ -39,142 +40,158 @@ DATE_FROM = DAYS[0].strftime("%Y%m%d")
 DATE_TO = DAYS[-1].strftime("%Y%m%d")
 
 
-meals_v2 = {}
-meals = {}
-def meal():
-    menus_v2 = {}
-    menus = {}
-    calories = {}
+class Meal:
+    def __init__(self):
+        self.v2 = {}
+        self._default = {}
 
-    req = urllib.request.urlopen("https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
-                                 "=%s&SD_SCHUL_CODE=%s&MMEAL_SC_CODE=2&MLSV_FROM_YMD=%s&MLSV_TO_YMD=%s"
-                                 % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
-    data = json.loads(req.read())
+    def __getattr__(self, _):
+        return self._default
 
-    try:
-        for item in data["mealServiceDietInfo"][1]["row"]:
-            date = datetime.datetime.strptime(item["MLSV_YMD"], "%Y%m%d").date()
+    def parse(self):
+        menus = collections.defaultdict(dict)
+        calories = {}
 
-            # 메뉴 파싱
-            menu = item["DDISH_NM"].replace('<br/>', '.\n')  # 줄바꿈 처리
-            menu = menu.split('\n')  # 한 줄씩 자르기
-            menu_cleaned_v2 = []
-            menu_cleaned = []
-            for i in menu:
-                allergy_info = [int(x[:-1]) for x in re.findall(r'[0-9]+\.', i)]
-                i = i.replace(".", "").replace(''.join(str(x) for x in allergy_info), '')
-                menu_cleaned_v2.append(i)
-                menu_cleaned.append([i, allergy_info])
-            menus_v2[date] = menu_cleaned_v2
-            menus[date] = menu_cleaned
-
-            # 칼로리 파싱
-            calories[date] = float(item["CAL_INFO"].replace(" Kcal", ""))
-    except KeyError:
-        pass
-
-    for i in DAYS:
-        meals_v2[i] = [menus_v2.get(i), calories.get(i)]
-        meals[i] = [menus.get(i), calories.get(i)]
-
-
-timetable = {}
-timetable_default = {}
-def tt():
-    timetable_raw_data = []
-    for grade in range(1, NUM_OF_GRADES + 1):
-        classes = {}
-        for class_ in range(1, NUM_OF_CLASSES + 1):
-            classes[str(class_)] = []
-        timetable_default[str(grade)] = classes
-
-    page_index = 1
-    while True:
-        req = urllib.request.urlopen("https://open.neis.go.kr/hub/hisTimetable?KEY=%s&Type=json&pIndex=%d&pSize=1000"
-                                     "&ATPT_OFCDC_SC_CODE=%s&SD_SCHUL_CODE=%s&TI_FROM_YMD=%s&TI_TO_YMD=%s "
-                                     % (NEIS_OPENAPI_TOKEN, page_index, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE,
-                                        DATE_FROM, DATE_TO))
+        req = urllib.request.urlopen(
+            "https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
+            "=%s&SD_SCHUL_CODE=%s&MMEAL_SC_CODE=2&MLSV_FROM_YMD=%s&MLSV_TO_YMD=%s"
+            % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
         data = json.loads(req.read())
 
         try:
-            for i in data["hisTimetable"][1]["row"]:
-                date = datetime.datetime.strptime(i["ALL_TI_YMD"], "%Y%m%d").date()
+            for item in data["mealServiceDietInfo"][1]["row"]:
+                date = datetime.datetime.strptime(item["MLSV_YMD"], "%Y%m%d").date()
 
-                timetable_raw_data.append([date, i["GRADE"], i["CLASS_NM"], i["ITRT_CNTNT"]])
-            if len(data["hisTimetable"][1]["row"]) < 1000:
-                break
+                # 메뉴 파싱
+                menu = item["DDISH_NM"].replace('<br/>', '.\n')  # 줄바꿈 처리
+                menu = menu.split('\n')  # 한 줄씩 자르기
+                menu_cleaned_v2 = []
+                menu_cleaned = []
+                for i in menu:
+                    allergy_info = [int(x[:-1]) for x in re.findall(r'[0-9]+\.', i)]
+                    i = i.replace(".", "").replace(''.join(str(x) for x in allergy_info), '')
+                    menu_cleaned_v2.append(i)
+                    menu_cleaned.append([i, allergy_info])
+                menus["v2"][date] = menu_cleaned_v2
+                menus["default"][date] = menu_cleaned
+
+                # 칼로리 파싱
+                calories[date] = float(item["CAL_INFO"].replace(" Kcal", ""))
         except KeyError:
-            break
-        page_index += 1
+            pass
 
-    for date, x in groupby(timetable_raw_data, lambda i: i[0]):
-        timetable[date] = {}
-        for grade, y in groupby(x, lambda i: i[1]):
-            timetable[date][grade] = {}
-            for class_, z in groupby(y, lambda i: i[2]):
-                timetable[date][grade][class_] = [i[3] for i in z if i[3] != "토요휴업일"]
+        for i in DAYS:
+            self.v2[i] = [menus.get("v2", menus["default"]).get(i), calories.get(i)]
+            self._default[i] = [menus.get("default", menus["default"]).get(i), calories.get(i)]
 
 
-schdls = {}
-def schdl():
-    schedule_raw_data = []
-    req = urllib.request.urlopen("https://open.neis.go.kr/hub/SchoolSchedule?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
-                                 "=%s&SD_SCHUL_CODE=%s&AA_FROM_YMD=%s&AA_TO_YMD=%s"
-                                 % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
-    data = json.loads(req.read())
+class Schedule:
+    def __init__(self):
+        self._default = {}
 
-    for i in data["SchoolSchedule"][1]["row"]:
-        date = datetime.datetime.strptime(i["AA_YMD"], "%Y%m%d").date()
+    def __getattr__(self, _):
+        return self._default
 
-        related_grade = []
-        if i["ONE_GRADE_EVENT_YN"] == "Y": related_grade.append(1)
-        if i["TW_GRADE_EVENT_YN"] == "Y": related_grade.append(2)
-        if i["THREE_GRADE_EVENT_YN"] == "Y": related_grade.append(3)
-        if i["FR_GRADE_EVENT_YN"] == "Y": related_grade.append(4)
-        if i["FIV_GRADE_EVENT_YN"] == "Y": related_grade.append(5)
-        if i["SIX_GRADE_EVENT_YN"] == "Y": related_grade.append(6)
+    def parse(self):
+        schedule_raw_data = []
+        req = urllib.request.urlopen("https://open.neis.go.kr/hub/SchoolSchedule?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
+                                     "=%s&SD_SCHUL_CODE=%s&AA_FROM_YMD=%s&AA_TO_YMD=%s"
+                                     % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
+        data = json.loads(req.read())
 
-        schedule_raw_data.append([date, i["EVENT_NM"], related_grade])
+        for i in data["SchoolSchedule"][1]["row"]:
+            date = datetime.datetime.strptime(i["AA_YMD"], "%Y%m%d").date()
 
-    for date, x in groupby(schedule_raw_data, lambda i: i[0]):
-        schdls[date] = []
-        for schedule in x:
-            if schedule[1] != "토요휴업일":
-                schedule_text = "%s(%s)" % (schedule[1].strip(), ", ".join("%s학년" % i for i in schedule[2]))
-                schedule_text = schedule_text.replace("()", "")
-                schdls[date].append(schedule_text)
-        if not schdls[date]:
-            schdls[date] = None
+            related_grade = []
+            if i["ONE_GRADE_EVENT_YN"] == "Y": related_grade.append(1)
+            if i["TW_GRADE_EVENT_YN"] == "Y": related_grade.append(2)
+            if i["THREE_GRADE_EVENT_YN"] == "Y": related_grade.append(3)
+            if i["FR_GRADE_EVENT_YN"] == "Y": related_grade.append(4)
+            if i["FIV_GRADE_EVENT_YN"] == "Y": related_grade.append(5)
+            if i["SIX_GRADE_EVENT_YN"] == "Y": related_grade.append(6)
 
-th_meal = Thread(target=meal)
-th_tt = Thread(target=tt)
-th_schdl = Thread(target=schdl)
-# 쓰레드 실행
-th_meal.start()
-th_tt.start()
-th_schdl.start()
-# 전 쓰레드 종료 시까지 기다리기
-th_meal.join()
-th_tt.join()
-th_schdl.join()
+            schedule_raw_data.append([date, i["EVENT_NM"], related_grade])
 
-final_v2 = {}
-final = {}
-for i in DAYS:
-    final_v2['%04d-%02d-%02d' % (i.year, i.month, i.day)] = {
-        'Schedule': schdls.get(i),
-        'Meal': meals_v2.get(i, [None, None]),
-        "Timetable": timetable.get(i, timetable_default)
-    }
-for i in DAYS:
-    final['%04d-%02d-%02d' % (i.year, i.month, i.day)] = {
-        'Schedule': schdls.get(i),
-        'Meal': meals.get(i, [None, None]),
-        "Timetable": timetable.get(i, timetable_default)
-    }
-with open('dist/data.v2.json', 'w', encoding="utf-8") as make_file:
-    json.dump(final_v2, make_file, ensure_ascii=False)
-    print("File Created(v2)")
-with open('dist/data.v3.json', 'w', encoding="utf-8") as make_file:
-    json.dump(final, make_file, ensure_ascii=False)
-    print("File Created")
+        for date, x in groupby(schedule_raw_data, lambda i: i[0]):
+            self._default[date] = []
+            for schedule in x:
+                if schedule[1] != "토요휴업일":
+                    schedule_text = "%s(%s)" % (schedule[1].strip(), ", ".join("%s학년" % i for i in schedule[2]))
+                    schedule_text = schedule_text.replace("()", "")
+                    self._default[date].append(schedule_text)
+            if not self._default[date]:
+                self._default[date] = None
+
+
+class Timetable:
+    def __init__(self):
+        self.default = {}
+        self._default = {}
+
+    def __getattr__(self, _):
+        return self._default
+
+    def parse(self):
+        timetable_raw_data = []
+        for grade in range(1, NUM_OF_GRADES + 1):
+            classes = {}
+            for class_ in range(1, NUM_OF_CLASSES + 1):
+                classes[str(class_)] = []
+            self.default[str(grade)] = classes
+
+        page_index = 1
+        while True:
+            req = urllib.request.urlopen(
+                "https://open.neis.go.kr/hub/hisTimetable?KEY=%s&Type=json&pIndex=%d&pSize=1000"
+                "&ATPT_OFCDC_SC_CODE=%s&SD_SCHUL_CODE=%s&TI_FROM_YMD=%s&TI_TO_YMD=%s "
+                % (NEIS_OPENAPI_TOKEN, page_index, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE,
+                   DATE_FROM, DATE_TO))
+            data = json.loads(req.read())
+
+            try:
+                for i in data["hisTimetable"][1]["row"]:
+                    date = datetime.datetime.strptime(i["ALL_TI_YMD"], "%Y%m%d").date()
+
+                    timetable_raw_data.append([date, i["GRADE"], i["CLASS_NM"], i["ITRT_CNTNT"]])
+                if len(data["hisTimetable"][1]["row"]) < 1000:
+                    break
+            except KeyError:
+                break
+            page_index += 1
+
+        for date, x in groupby(timetable_raw_data, lambda i: i[0]):
+            self._default[date] = {}
+            for grade, y in groupby(x, lambda i: i[1]):
+                self._default[date][grade] = {}
+                for class_, z in groupby(y, lambda i: i[2]):
+                    self._default[date][grade][class_] = [i[3] for i in z if i[3] != "토요휴업일"]
+
+
+meal = Meal()
+schedule = Schedule()
+timetable = Timetable()
+
+thread_meal = Thread(target=meal.parse)
+thread_schedule = Thread(target=schedule.parse)
+thread_timetable = Thread(target=timetable.parse)
+
+thread_meal.start()
+thread_schedule.start()
+thread_timetable.start()
+
+thread_meal.join()
+thread_schedule.join()
+thread_timetable.join()
+
+api_data = collections.defaultdict(dict)
+for version in SUPPORTED_API_VERSIONS:
+    for day in DAYS:
+        api_data[version]['%04d-%02d-%02d' % (day.year, day.month, day.day)] = {
+            'Meal': getattr(meal, version).get(day, [None, None]),
+            'Schedule': getattr(schedule, version).get(day),
+            "Timetable": getattr(timetable, version).get(day, timetable.default)
+        }
+for version in api_data:
+    with open('dist/data.%s.json' % version, 'w', encoding="utf-8") as make_file:
+        json.dump(api_data[version], make_file, ensure_ascii=False)
+        print("File Created(%s)" % version)
