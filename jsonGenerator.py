@@ -52,10 +52,9 @@ class Meal:
         menus = collections.defaultdict(dict)
         calories = {}
 
-        req = urllib.request.urlopen(
-            "https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
-            "=%s&SD_SCHUL_CODE=%s&MMEAL_SC_CODE=2&MLSV_FROM_YMD=%s&MLSV_TO_YMD=%s"
-            % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
+        req = urllib.request.urlopen(f'https://open.neis.go.kr/hub/mealServiceDietInfo?KEY={NEIS_OPENAPI_TOKEN}'
+                                     f'&Type=json&ATPT_OFCDC_SC_CODE={ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE={SD_SCHUL_CODE}'
+                                     f'&MMEAL_SC_CODE=2&MLSV_FROM_YMD={DATE_FROM}&MLSV_TO_YMD={DATE_TO}')
         data = json.loads(req.read())
 
         try:
@@ -95,9 +94,9 @@ class Schedule:
 
     def parse(self):
         schedule_raw_data = []
-        req = urllib.request.urlopen("https://open.neis.go.kr/hub/SchoolSchedule?KEY=%s&Type=json&ATPT_OFCDC_SC_CODE"
-                                     "=%s&SD_SCHUL_CODE=%s&AA_FROM_YMD=%s&AA_TO_YMD=%s"
-                                     % (NEIS_OPENAPI_TOKEN, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE, DATE_FROM, DATE_TO))
+        req = urllib.request.urlopen(f'https://open.neis.go.kr/hub/SchoolSchedule?KEY={NEIS_OPENAPI_TOKEN}&Type=json'
+                                     f'&ATPT_OFCDC_SC_CODE={ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE={SD_SCHUL_CODE}'
+                                     f'&AA_FROM_YMD={DATE_FROM}&AA_TO_YMD={DATE_TO}')
         data = json.loads(req.read())
 
         for i in data["SchoolSchedule"][1]["row"]:
@@ -116,7 +115,7 @@ class Schedule:
         for date, x in groupby(schedule_raw_data, lambda i: i[0]):
             for schedule in x:
                 if schedule[1] != "토요휴업일":
-                    schedule_text = "%s(%s)" % (schedule[1], ", ".join("%s학년" % i for i in schedule[2]))
+                    schedule_text = f'{schedule[1]}({", ".join(f"{i}학년" for i in schedule[2])})'
                     schedule_text = schedule_text.replace("()", "")
                     self.v4[date].append([schedule[1], schedule[2]])
                     self._default[date].append(schedule_text)
@@ -143,11 +142,9 @@ class Timetable:
 
         page_index = 1
         while True:
-            req = urllib.request.urlopen(
-                "https://open.neis.go.kr/hub/hisTimetable?KEY=%s&Type=json&pIndex=%d&pSize=1000"
-                "&ATPT_OFCDC_SC_CODE=%s&SD_SCHUL_CODE=%s&TI_FROM_YMD=%s&TI_TO_YMD=%s "
-                % (NEIS_OPENAPI_TOKEN, page_index, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE,
-                   DATE_FROM, DATE_TO))
+            req = urllib.request.urlopen(f'https://open.neis.go.kr/hub/hisTimetable?KEY={NEIS_OPENAPI_TOKEN}&Type=json'
+                                         f'&pIndex={page_index}&pSize=1000&ATPT_OFCDC_SC_CODE={ATPT_OFCDC_SC_CODE}'
+                                         f'&SD_SCHUL_CODE={SD_SCHUL_CODE}&TI_FROM_YMD={DATE_FROM}&TI_TO_YMD={DATE_TO}')
             data = json.loads(req.read())
 
             try:
@@ -188,12 +185,12 @@ thread_timetable.join()
 api_data = collections.defaultdict(dict)
 for version in SUPPORTED_API_VERSIONS:
     for day in DAYS:
-        api_data[version]['%04d-%02d-%02d' % (day.year, day.month, day.day)] = {
+        api_data[version][f'{day:%Y-%m-%d}'] = {
             'Meal': getattr(meal, version).get(day, [None, None]),
             'Schedule': getattr(schedule, version).get(day),
             "Timetable": getattr(timetable, version).get(day, timetable.default)
         }
 for version in api_data:
-    with open('dist/data.%s.json' % version, 'w', encoding="utf-8") as make_file:
+    with open(f'dist/data.{version}.json', 'w', encoding="utf-8") as make_file:
         json.dump(api_data[version], make_file, ensure_ascii=False)
-        print("File Created(%s)" % version)
+        print(f'File Created({version})')
