@@ -91,5 +91,6 @@ ENV/
 .idea/
 bak/
 .vs/
+.vscode/
 
 deploy.sh
