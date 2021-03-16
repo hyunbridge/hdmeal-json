@@ -7,6 +7,7 @@
 # Copyright 2019-2020, Hyungyo Seo
 # jsonGenerator.py - 어제, 오늘 내일의 학사정보를 JSON 파일로 만들어주는 스크립트입니다.
 
+import brotli
 import collections
 import datetime
 import json
@@ -219,3 +220,6 @@ for version in api_data:
     with open(f"dist/data.{version}.json", "w", encoding="utf-8") as make_file:
         json.dump(api_data[version], make_file, ensure_ascii=False)
         print(f"File Created({version})")
+    with open(f"dist/data.{version}.json.br", "wb") as make_file:
+        make_file.write(brotli.compress(json.dumps(api_data[version], ensure_ascii=False).encode("utf-8")))
+        print(f"File Created({version}, w/ Brotli)")

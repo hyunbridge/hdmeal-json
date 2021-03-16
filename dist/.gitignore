@@ -1,3 +1,4 @@
 *.json
+*.json.br
 #... except for this one.
 !.gitignore
