@@ -38,7 +38,7 @@ print("Deployment Started")
 
 TODAY = datetime.datetime.now(pytz.timezone("Asia/Seoul")).date()
 # 오늘 전후로 나흘씩 조회
-DAYS = [TODAY + datetime.timedelta(days=i) for i in [-3, -2, -1, 0, 1, 2, 3]]
+DAYS = [TODAY + datetime.timedelta(days=i) for i in [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
 DATE_FROM = DAYS[0].strftime("%Y%m%d")
 DATE_TO = DAYS[-1].strftime("%Y%m%d")
 
