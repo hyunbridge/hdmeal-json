@@ -9,6 +9,7 @@
 
 import brotli
 import collections
+import copy
 import datetime
 import json
 import os
@@ -183,9 +184,8 @@ class Timetable:
             page_index += 1
 
         for date, x in groupby(timetable_raw_data, lambda i: i[0]):
-            self._default[date] = {}
+            self._default[date] = copy.deepcopy(self.default)
             for grade, y in groupby(x, lambda i: i[1]):
-                self._default[date][grade] = {}
                 for class_, z in groupby(y, lambda i: i[2]):
                     self._default[date][grade][class_] = [
                         i[3] for i in z if i[3] != "토요휴업일"
