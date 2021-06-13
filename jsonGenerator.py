@@ -73,7 +73,7 @@ class Meal:
                 menu_cleaned_v2 = []
                 menu_cleaned = []
                 for i in menu:
-                    allergy_info = [int(x[:-1]) for x in re.findall(r"[0-9]+\.", i)]
+                    allergy_info = [int(x[:-1]) for x in re.findall(r"[0-9]+\.", i) if 1 <= int(x[:-1]) <= 18]
                     i = i.replace(".", "").replace(
                         "".join(str(x) for x in allergy_info), ""
                     )
