@@ -16,7 +16,7 @@ import os
 import re
 import urllib.request
 from itertools import groupby
-from threading import Thread
+import concurrent.futures
 import pytz as pytz
 
 
@@ -196,17 +196,13 @@ meal = Meal()
 schedule = Schedule()
 timetable = Timetable()
 
-thread_meal = Thread(target=meal.parse)
-thread_schedule = Thread(target=schedule.parse)
-thread_timetable = Thread(target=timetable.parse)
+QUEUE = [meal.parse, schedule.parse, timetable.parse]
 
-thread_meal.start()
-thread_schedule.start()
-thread_timetable.start()
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    futures = {executor.submit(x): x for x in QUEUE}
 
-thread_meal.join()
-thread_schedule.join()
-thread_timetable.join()
+    for future in concurrent.futures.as_completed(futures):
+        future.result()
 
 api_data = collections.defaultdict(dict)
 for version in SUPPORTED_API_VERSIONS:
