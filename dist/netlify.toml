@@ -1,0 +1,29 @@
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    X-Powered-By = "HGSEO"
+    
+[[redirects]]
+  from = "/*.json"
+  to = "/errors/404.json"
+  status = 404
+  force = true
+ 
+[[redirects]]
+  from = "/app/:version/"
+  to = "/data.:version.json"
+  status = 200
+  force = true
+ 
+[[redirects]]
+  from = "/app/:version/br/"
+  to = "/data.:version.json.br"
+  status = 200
+  force = true
+ 
+[[redirects]]
+  from = "/*"
+  to = "/errors/404.json"
+  status = 404
+  force = true
