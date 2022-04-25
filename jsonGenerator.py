@@ -39,7 +39,10 @@ print("Deployment Started")
 
 TODAY = datetime.datetime.now(pytz.timezone("Asia/Seoul")).date()
 # 오늘 전후로 나흘씩 조회
-DAYS = [TODAY + datetime.timedelta(days=i) for i in [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
+DAYS = [
+    TODAY + datetime.timedelta(days=i)
+    for i in [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+]
 DATE_FROM = DAYS[0].strftime("%Y%m%d")
 DATE_TO = DAYS[-1].strftime("%Y%m%d")
 
@@ -73,10 +76,15 @@ class Meal:
                 menu_cleaned_v2 = []
                 menu_cleaned = []
                 for i in menu:
-                    allergy_info = [int(x[:-1]) for x in re.findall(r"[0-9]+\.", i) if 1 <= int(x[:-1]) <= 18]
-                    i = i.replace(".", "").replace(
-                        "".join(str(x) for x in allergy_info), ""
-                    )
+                    allergy_info = [
+                        int(x[:-1])
+                        for x in re.findall(r"[0-9]+\.", i)
+                        if 1 <= int(x[:-1]) <= 18
+                    ]
+                    i = i.replace(
+                        f'{".".join(str(x) for x in allergy_info)}.', ""
+                    ).replace("()", "")
+                    i = re.sub(r"[#&*-.@_ ]+$", "", i)
                     menu_cleaned_v2.append(i)
                     menu_cleaned.append([i, allergy_info])
                 menus["v2"][date] = menu_cleaned_v2
@@ -217,5 +225,9 @@ for version in api_data:
         json.dump(api_data[version], make_file, ensure_ascii=False)
         print(f"File Created({version})")
     with open(f"dist/data.{version}.json.br", "wb") as make_file:
-        make_file.write(brotli.compress(json.dumps(api_data[version], ensure_ascii=False).encode("utf-8")))
+        make_file.write(
+            brotli.compress(
+                json.dumps(api_data[version], ensure_ascii=False).encode("utf-8")
+            )
+        )
         print(f"File Created({version}, w/ Brotli)")
