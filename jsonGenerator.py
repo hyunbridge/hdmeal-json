@@ -84,7 +84,7 @@ class Meal:
                     i = i.replace(
                         f'{".".join(str(x) for x in allergy_info)}.', ""
                     ).replace("()", "")
-                    i = re.sub(r"[#&*-.@_ ]+$", "", i)
+                    i = re.sub(r"[ #&*-.=@_]+$", "", i)
                     menu_cleaned_v2.append(i)
                     menu_cleaned.append([i, allergy_info])
                 menus["v2"][date] = menu_cleaned_v2
