@@ -22,12 +22,6 @@
   force = true
 
 [[redirects]]
-  from = "/app/:version/br/"
-  to = "/data.:version.json.br"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/*"
   to = "/errors/404.json"
   status = 404
