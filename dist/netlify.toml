@@ -2,12 +2,19 @@
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
+    Content-Type = "application/json; charset=utf-8"
     X-Powered-By = "HGSEO"
 
 [[headers]]
   for = "/app/*/"
-  [headers.values]
-    Content-Type = "application/json; charset=utf-8"
+  [headers.values] 
+    Cache-Control = "public, max-age=86400"
+
+[[redirects]]
+  from = "/app/version"
+  to = "https://gist.githubusercontent.com/hyunbridge/42d40ca9571600ef467aeb2876aaad0e/raw/hdmeal_mobile_version.json"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*.json"
