@@ -65,6 +65,9 @@ class Meal:
         )
         data = json.loads(req.read())
 
+        if "mealServiceDietInfo" not in data:
+            return
+
         try:
             for item in data["mealServiceDietInfo"][1]["row"]:
                 date = datetime.datetime.strptime(item["MLSV_YMD"], "%Y%m%d").date()
@@ -118,6 +121,9 @@ class Schedule:
             f"&AA_FROM_YMD={DATE_FROM}&AA_TO_YMD={DATE_TO}"
         )
         data = json.loads(req.read())
+
+        if "SchoolSchedule" not in data:
+            return
 
         for i in data["SchoolSchedule"][1]["row"]:
             date = datetime.datetime.strptime(i["AA_YMD"], "%Y%m%d").date()
@@ -176,6 +182,9 @@ class Timetable:
                 f"&SD_SCHUL_CODE={SD_SCHUL_CODE}&TI_FROM_YMD={DATE_FROM}&TI_TO_YMD={DATE_TO}"
             )
             data = json.loads(req.read())
+
+            if "hisTimetable" not in data:
+                break
 
             try:
                 for i in data["hisTimetable"][1]["row"]:
