@@ -190,9 +190,10 @@ class Timetable:
                 for i in data["hisTimetable"][1]["row"]:
                     date = datetime.datetime.strptime(i["ALL_TI_YMD"], "%Y%m%d").date()
 
-                    timetable_raw_data.append(
-                        [date, i["GRADE"], i["CLASS_NM"], i["ITRT_CNTNT"]]
-                    )
+                    if i["CLASS_NM"] and i["ITRT_CNTNT"]:
+                        timetable_raw_data.append(
+                            [date, i["GRADE"], i["CLASS_NM"], i["ITRT_CNTNT"]]
+                        )
                 if len(data["hisTimetable"][1]["row"]) < 1000:
                     break
             except KeyError:
