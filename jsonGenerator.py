@@ -93,7 +93,7 @@ class Meal:
                 menus["default"][date] = menu_cleaned
 
                 # 칼로리 파싱
-                calories[date] = float(item["CAL_INFO"].replace(" Kcal", ""))
+                calories[date] = float(item["CAL_INFO"].replace(" Kcal", "") if item["CAL_INFO"] is not None else "0")
         except KeyError:
             pass
 
